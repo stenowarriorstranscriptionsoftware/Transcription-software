@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta http-equiv="content-type" content="text/html;charset=utf-8" />
+  <title>Steno Warriors Transcription Software</title>
+  <script src="lookup.js"></script>
+  <script src="textLookup.js"></script>
+  <script src="1c2.js"></script>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com/">
+  <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+
+<body>
+  <div class="header">
+    <h1>Steno Warriors Transcription Software</h1>
+  </div>
+
+  <div class="main">
+    <h2>Please select a Test</h2>
+    <div class="select-panel">
+      <select id="volume-select">
+        <option value="1">Test 1-22</option>
+        <option value="2">Test 23-44</option>
+        <option value="3">Test 45-66</option>
+        <option value="4">Test 67-88</option>
+        <option value="5">Test 89-110</option>
+      </select>
+
+      <select id="test-select">
+      </select>
+    
+      <select id="speed-select">
+        <option value="70">70 WPM</option>
+        <option value="75">75 WPM</option>
+        <option value="80">80 WPM</option>
+        <option value="85">85 WPM</option>
+        <option value="90">90 WPM</option>
+        <option value="95">95 WPM</option>
+        <option value="100">100 WPM</option>
+      </select>
+    </div>
+    <div id="video-container"></div>
+
+    <div class="timer-container">
+      Typing timer: <span id="timer">50:00</span>
+      <div class="timer-controls">
+        <label><input type="radio" name="duration" value="2400"> 40 min</label>
+        <label><input type="radio" name="duration" value="3000" checked> 50 min</label>
+        <button id="startPause" class="tmrBtn">Start</button>
+        <button id="reset" class="tmrBtn">Reset</button>
+      </div>
+    </div>
+    
+    <div id="paragraphA"></div>
+    <textarea class="inputBox" id="paragraphB" spellcheck="false" placeholder="Click Start to begin typing" disabled></textarea>
+    <div class="resultText" id="textBoxC" style="display: none;"></div>
+    <button onclick="downloadPDF()" class="download-btn">Show Result</button>
+  </div>
+
+  <div class="footer">
+    <div>
+      Made with <span style="color: red;">&hearts;</span> &middot; Anish &middot; <a href=""> Contact </a>
+    </div>
+  </div>
+
+  <!-- Add these scripts before your main script -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+    // Timer functionality
+    let timerDisplay = document.getElementById('timer');
+    let startPauseButton = document.getElementById('startPause');
+    let resetButton = document.getElementById('reset');
+    let paragraphB = document.getElementById('paragraphB');
+    let timerInterval;
+    let timeLeft = 3000;
+    let durationRadios = document.getElementsByName('duration');
+    let isTimerRunning = false;
+
+    function updateTimerDisplay() {
+      let minutes = Math.floor(timeLeft / 60);
+      let seconds = timeLeft % 60;
+      timerDisplay.textContent = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+    }
+
+    function startTimer() {
+      isTimerRunning = true;
+      paragraphB.disabled = false;
+      paragraphB.placeholder = "Start typing here...";
+      paragraphB.focus();
+      
+      timerInterval = setInterval(() => {
+        if (timeLeft > 0) {
+          timeLeft--;
+          updateTimerDisplay();
+        } else {
+          clearInterval(timerInterval);
+          startPauseButton.textContent = 'Start';
+          isTimerRunning = false;
+          paragraphB.disabled = true;
+        }
+      }, 1000);
+      startPauseButton.textContent = 'Pause';
+    }
+
+    function pauseTimer() {
+      clearInterval(timerInterval);
+      startPauseButton.textContent = 'Start';
+      isTimerRunning = false;
+      paragraphB.disabled = true;
+      paragraphB.placeholder = "Timer paused - click Start to continue";
+    }
+
+    startPauseButton.addEventListener('click', () => {
+      if (startPauseButton.textContent === 'Start') {
+        startTimer();
+      } else {
+        pauseTimer();
+      }
+    });
+
+    resetButton.addEventListener('click', () => {
+      clearInterval(timerInterval);
+      for (let radio of durationRadios) {
+        if (radio.checked) {
+          timeLeft = parseInt(radio.value);
+          break;
+        }
+      }
+      updateTimerDisplay();
+      startPauseButton.textContent = 'Start';
+      isTimerRunning = false;
+      paragraphB.disabled = true;
+      paragraphB.value = '';
+      paragraphB.placeholder = "Click Start to begin typing";
+    });
+
+    function updateDuration() {
+      clearInterval(timerInterval);
+      for (let radio of durationRadios) {
+        if (radio.checked) {
+          timeLeft = parseInt(radio.value);
+          break;
+        }
+      }
+      updateTimerDisplay();
+      startPauseButton.textContent = 'Start';
+      isTimerRunning = false;
+      paragraphB.disabled = true;
+    }
+
+    for (let radio of durationRadios) {
+      radio.addEventListener('change', updateDuration);
+    }
+
+    // Test selection functionality
+    const volumeSelect = document.getElementById('volume-select');
+    const testSelect = document.getElementById('test-select');
+    const speedSelect = document.getElementById('speed-select');
+    const videoContainer = document.getElementById('video-container');
+
+    const tests = {
+      1: Array.from({ length: 22 }, (_, i) => `${i + 1}`),
+      2: Array.from({ length: 22 }, (_, i) => `${i + 23}`),
+      3: Array.from({ length: 22 }, (_, i) => `${i + 45}`),
+      4: Array.from({ length: 22 }, (_, i) => `${i + 67}`), 
+      5: Array.from({ length: 22 }, (_, i) => `${i + 89}`),
+    };
+
+    function populateTests(volume) {
+      testSelect.innerHTML = '';
+      const options = tests[volume];
+      options.forEach(test => {
+        const option = document.createElement('option');
+        option.value = test;
+        option.text = "Test " + test.toString();
+        testSelect.appendChild(option);
+      });
+    }
+
+    function updateVideo() {
+      const spd = document.getElementById('speed-select').value;
+      const tst = document.getElementById('test-select').value;
+
+      videoUrl = urlLookup[parseInt(tst, 10)][parseInt(spd, 10)];
+      paragraphA.value = textTable[parseInt(tst, 10)];
+      paragraphB.placeholder = "Click Start to begin typing";
+      videoContainer.innerHTML = `<iframe src="${videoUrl}" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>`;
+    }
+
+    volumeSelect.addEventListener('change', () => {
+      populateTests(volumeSelect.value);
+      updateVideo();
+    });
+
+    testSelect.addEventListener('change', updateVideo);
+    speedSelect.addEventListener('change', updateVideo);
+
+    // Initialize on load
+    populateTests(volumeSelect.value);
+    updateVideo();
+    updateTimerDisplay();
+
+    // Enhanced PDF download function
+    function downloadPDF() {
+      // Stop the timer when showing results
+      if (isTimerRunning) {
+        pauseTimer();
+      }
+      
+      compareParagraphs();
+      
+      // Get current date and time
+      const currentDate = new Date();
+      const day = currentDate.getDate();
+      const monthIndex = currentDate.getMonth();
+      const year = currentDate.getFullYear();
+      const hours = currentDate.getHours();
+      const currentMinutes = currentDate.getMinutes();
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const formattedHours = hours % 12 || 12;
+      const formattedMinutes = currentMinutes < 10 ? '0' + currentMinutes : currentMinutes;
+
+      const monthNames = [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+      ];
+
+      const formattedDate = `${day} ${monthNames[monthIndex]} ${year},`;
+      const formattedTime = `${formattedHours}:${formattedMinutes} ${ampm}`;
+
+      const headerContent = `
+        <div style="text-align: center; margin-bottom: 20px;">
+          <h2 style="color: #4361ee;">Steno Warriors Result Sheet</h2>
+          <div style="margin-top: 10px;">
+            Test Date & Time: ${formattedDate} ${formattedTime}
+          </div>
+        </div>
+      `;
+
+      const headerText = document.createElement('div');
+      headerText.innerHTML = headerContent;
+      headerText.style.textAlign = 'center';
+
+      const textBoxC = document.getElementById('textBoxC');
+      textBoxC.insertBefore(headerText, textBoxC.firstChild);
+      
+      // Add download button
+      const downloadBtn = document.createElement('button');
+      downloadBtn.textContent = 'Download PDF';
+      downloadBtn.className = 'download-btn';
+      downloadBtn.onclick = generatePDF;
+      
+      textBoxC.appendChild(downloadBtn);
+      textBoxC.style.display = 'block';
+    }
+
+    function generatePDF() {
+      const { jsPDF } = window.jspdf;
+      const element = document.getElementById('textBoxC');
+      
+      // Temporarily hide the download button to avoid including it in the PDF
+      const downloadBtn = element.querySelector('button');
+      if (downloadBtn) downloadBtn.style.display = 'none';
+      
+      // Add some padding for better appearance in PDF
+      const originalPadding = element.style.padding;
+      element.style.padding = '20px';
+      
+      html2canvas(element, {
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      }).then(canvas => {
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210; // A4 width in mm
+        const pageHeight = 295; // A4 height in mm
+        const imgHeight = canvas.height * imgWidth / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        // Restore the button visibility and original padding
+        if (downloadBtn) downloadBtn.style.display = 'block';
+        element.style.padding = originalPadding;
+        
+        pdf.save('StenoWarriors_Result.pdf');
+      });
+    }
+  </script>
+</body>
+</html>
