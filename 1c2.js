@@ -50,6 +50,45 @@ function arraysAreEqual(arr1, arr2) {
     return true;
 }
 
+function findBestMatch(paragraphA, paragraphB) {
+    var bestMatch = {
+        index: -1,
+        length: 0,
+        errors: Infinity
+    };
+    
+    // Try all possible starting positions in paragraphA
+    for (var start = 0; start < paragraphA.length; start++) {
+        var errors = 0;
+        var matchLength = 0;
+        
+        // Compare words from this starting position
+        for (var i = 0; i < paragraphB.length && (start + i) < paragraphA.length; i++) {
+            var cleanWordA = paragraphA[start + i].replace(/[,\?\-\s]/g, '').toLowerCase();
+            var cleanWordB = paragraphB[i].replace(/[,\?\-\s]/g, '').toLowerCase();
+            
+            if (cleanWordA !== cleanWordB) {
+                errors++;
+                // Allow some errors but not too many
+                if (errors > Math.min(paragraphB.length * 0.2, 3)) break;
+            }
+            matchLength++;
+        }
+        
+        // Update best match if this one is better
+        if (matchLength > bestMatch.length || 
+           (matchLength === bestMatch.length && errors < bestMatch.errors)) {
+            bestMatch = {
+                index: start,
+                length: matchLength,
+                errors: errors
+            };
+        }
+    }
+    
+    return bestMatch.index >= 0 ? bestMatch : null;
+}
+
 function compareParagraphs() {
     var paragraphA = document.getElementById('paragraphA').value
         .replace(/<[^>]*>/g, '')
@@ -63,50 +102,124 @@ function compareParagraphs() {
         .trim()
         .split(/\s+/);
 
+    // Find the best matching portion with some error tolerance
+    var bestMatch = findBestMatch(paragraphA, paragraphB);
+
     var comparedText = '';
     var numHalfDiff = 0;
     var numFullDiff = 0;
     var wordAIndex = 0;
     var wordBIndex = 0;
 
+    // Legend/header section
     comparedText += '<div style="border: 1px solid green; width: 930px; padding: 5px; border-radius: 4px; margin-bottom: 10px;">';
-
     comparedText += '<div style="display: flex; align-items: center; margin-bottom: 5px;">';
     comparedText += '<div style="width: 20px; height: 20px; color: red; border-radius: 4px;">■</div>';
     comparedText += '<strong style="margin-left: 5px;">Addition of word.</strong>';
     comparedText += '</div>';
-
     comparedText += '<div style="display: flex; align-items: center; margin-bottom: 5px;">';
     comparedText += '<div style="width: 20px; height: 20px; color: blue; border-radius: 4px;">■</div>';
     comparedText += '<strong style="margin-left: 5px;">Omission of word.</strong>';
     comparedText += '</div>';
-
     comparedText += '<div style="display: flex; align-items: center; margin-bottom: 10px;">';
     comparedText += '<div style="width: 20px; height: 20px; color: orange; border-radius: 4px;">■</div>';
     comparedText += '<strong style="margin-left: 5px;">Spelling Mistakes</strong>';
     comparedText += '</div>';
-
     comparedText += '<div style="display: flex; align-items: center; margin-bottom: 10px;">';
     comparedText += '<div style="width: 20px; height: 20px; color: purple; border-radius: 4px;">■</div>';
     comparedText += '<strong style="margin-left: 5px;">Capitalization Mistakes</strong>';
     comparedText += '</div>';
-
     comparedText += '</div>';
 
-    // Special case: if paragraphB is empty, count all words in paragraphA as omissions
+    // Special case: if paragraphB is empty
     if (paragraphB.length === 0) {
         comparedText += paragraphA.map(word => '<span style="color: blue;">' + word + '</span>').join(' ');
         numFullDiff = paragraphA.length;
         wordAIndex = paragraphA.length;
     } 
-    // Special case: if paragraphA is empty, count all words in paragraphB as additions
+    // Special case: if paragraphA is empty
     else if (paragraphA.length === 0) {
         comparedText += paragraphB.map(word => '<span style="color: red; text-decoration: line-through;">' + word + '</span>').join(' ');
         numFullDiff = paragraphB.length;
         wordBIndex = paragraphB.length;
     }
+    // Case where we found a good matching portion
+    else if (bestMatch && bestMatch.length > 0) {
+        // Words before the match are omissions
+        for (var i = 0; i < bestMatch.index; i++) {
+            comparedText += '<span style="color: blue;">' + paragraphA[i] + '</span> ';
+            numFullDiff++;
+        }
+
+        // Compare the matching portion with error detection
+        wordAIndex = bestMatch.index;
+        wordBIndex = 0;
+        
+        while (wordAIndex < bestMatch.index + bestMatch.length && wordBIndex < paragraphB.length) {
+            var wordA = paragraphA[wordAIndex] || '';
+            var wordB = paragraphB[wordBIndex] || '';
+            var cleanWordA = wordA.replace(/[,\?\-\s]/g, '');
+            var cleanWordB = wordB.replace(/[,\?\-\s]/g, '');
+
+            if (cleanWordA === cleanWordB) {
+                comparedText += '<span style="color: green;">' + wordA + '</span> ';
+                wordAIndex++;
+                wordBIndex++;
+            } else if (cleanWordA.toLowerCase() === cleanWordB.toLowerCase()) {
+                comparedText += '<span style="color: purple;">' + wordA + '</span> ';
+                comparedText += '<span style="text-decoration: line-through; text-decoration-color: green; color: purple;">' + wordB + '</span> ';
+                wordAIndex++;
+                wordBIndex++;
+                numHalfDiff++;
+            } else if (isSimilar(wordA, wordB)) {
+                comparedText += '<span style="color: orange;">' + wordA + '</span> ';
+                comparedText += '<span style="text-decoration: line-through; text-decoration-color: green; color: orange;">' + wordB + '</span> ';
+                wordAIndex++;
+                wordBIndex++;
+                numHalfDiff++;
+            } else {
+                // Check for missing or added words
+                var lookAheadA = paragraphA.slice(wordAIndex, wordAIndex + 3).map(w => w.replace(/[,\?\-\s]/g, '').toLowerCase());
+                var lookAheadB = paragraphB.slice(wordBIndex, wordBIndex + 3).map(w => w.replace(/[,\?\-\s]/g, '').toLowerCase());
+                
+                // Check if word is missing from typed text
+                if (!lookAheadB.includes(cleanWordA.toLowerCase())) {
+                    comparedText += '<span style="color: blue;">' + wordA + '</span> ';
+                    wordAIndex++;
+                    numFullDiff++;
+                } 
+                // Check if word was added to typed text
+                else if (!lookAheadA.includes(cleanWordB.toLowerCase())) {
+                    comparedText += '<span style="color: red; text-decoration: line-through;">' + wordB + '</span> ';
+                    wordBIndex++;
+                    numFullDiff++;
+                } 
+                // Default case - mark both as different
+                else {
+                    comparedText += '<span style="color: blue;">' + wordA + '</span> ';
+                    comparedText += '<span style="color: red; text-decoration: line-through;">' + wordB + '</span> ';
+                    wordAIndex++;
+                    wordBIndex++;
+                    numFullDiff++;
+                }
+            }
+        }
+
+        // Handle any remaining words in either paragraph
+        while (wordAIndex < paragraphA.length) {
+            comparedText += '<span style="color: blue;">' + paragraphA[wordAIndex] + '</span> ';
+            wordAIndex++;
+            numFullDiff++;
+        }
+        
+        while (wordBIndex < paragraphB.length) {
+            comparedText += '<span style="color: red; text-decoration: line-through;">' + paragraphB[wordBIndex] + '</span> ';
+            wordBIndex++;
+            numFullDiff++;
+        }
+    }
     else {
-        // Normal comparison when both paragraphs have content
+        // Original comparison logic when no good match is found
         while (wordAIndex < paragraphA.length || wordBIndex < paragraphB.length) {
             var wordA = paragraphA[wordAIndex] || '';
             var wordB = paragraphB[wordBIndex] || '';
@@ -212,7 +325,6 @@ function compareParagraphs() {
                                     comparedText += '<span style="color: red; text-decoration: line-through; text-decoration-color: green;">' + wordB + '</span> ';
                                     wordAIndex++;
                                     wordBIndex++;
-                                    // Only count one full mistake per word pair
                                     numFullDiff++;
                                 }
                             }
@@ -229,7 +341,7 @@ function compareParagraphs() {
     
     // Calculate WPM (Words Per Minute)
     var endTime = new Date();
-    var typingTimeSeconds = startTime ? (endTime - startTime) / 1000 : 60; // Default to 60 seconds if no start time
+    var typingTimeSeconds = startTime ? (endTime - startTime) / 1000 : 60;
     var typingTimeMinutes = typingTimeSeconds / 60;
     var wordsTyped = paragraphB.length;
     var wpm = typingTimeMinutes > 0 ? Math.round(wordsTyped / typingTimeMinutes) : 0;
