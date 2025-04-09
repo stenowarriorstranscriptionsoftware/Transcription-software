@@ -259,7 +259,17 @@ function compareParagraphs() {
         '</tr>' +
         '</table>';
 
-    document.getElementById('textBoxC').innerHTML = '<h2>Result Sheet:</h2>' + comparedText + tableContent;
+    // AI Analysis Section
+    var aiAnalysis = generateAIAnalysis(paragraphA, paragraphB, numHalfDiff, numFullDiff, wpm, accuracyPercentage);
+    
+    document.getElementById('textBoxC').innerHTML = '<h2>Result Sheet:</h2>' + 
+        comparedText + 
+        tableContent + 
+        '<div style="margin-top: 30px; border-top: 2px solid #4361ee; padding-top: 20px;">' +
+        '<h2 style="color: #4361ee;">AI-Powered Feedback</h2>' +
+        aiAnalysis +
+        '</div>';
+    
     document.getElementById('textBoxC').style.display = 'block';
     document.getElementById('textBoxC').style.border = '2px solid green';
 
@@ -271,4 +281,179 @@ function compareParagraphs() {
     // Reset timer for next comparison
     startTime = null;
     clearTimeout(typingTimer);
+}
+
+function generateAIAnalysis(originalText, userText, halfMistakes, fullMistakes, wpm, accuracy) {
+    // Analyze common mistakes
+    const mistakeAnalysis = analyzeMistakes(originalText, userText);
+    
+    // Generate personalized feedback
+    let feedback = '<div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">';
+    feedback += '<h3 style="color: #3f37c9; margin-bottom: 10px;">Performance Summary</h3>';
+    
+    // Overall assessment
+    if (accuracy >= 95) {
+        feedback += '<p>🌟 <strong>Excellent work!</strong> Your accuracy is outstanding. Keep practicing to maintain this high standard.</p>';
+    } else if (accuracy >= 85) {
+        feedback += '<p>👍 <strong>Good job!</strong> Your accuracy is above average. With some focused practice, you can reach excellence.</p>';
+    } else if (accuracy >= 70) {
+        feedback += '<p>📝 <strong>Fair performance.</strong> You\'re on the right track but need to work on reducing errors.</p>';
+    } else {
+        feedback += '<p>🔍 <strong>Needs improvement.</strong> Focus on accuracy before increasing your speed.</p>';
+    }
+    
+    // Speed assessment
+    if (wpm >= 50) {
+        feedback += '<p>⚡ <strong>Fast typer!</strong> Your speed is impressive. ';
+        if (accuracy < 90) {
+            feedback += 'Try slowing down slightly to improve accuracy.</p>';
+        } else {
+            feedback += 'Maintain this speed while keeping accuracy high.</p>';
+        }
+    } else if (wpm >= 40) {
+        feedback += '<p>🏃 <strong>Moderate speed.</strong> You\'re typing at a good pace. ';
+        feedback += 'With practice, you can increase speed without sacrificing accuracy.</p>';
+    } else {
+        feedback += '<p>🐢 <strong>Slow pace.</strong> Focus on building muscle memory and gradually increasing your speed.</p>';
+    }
+    
+    feedback += '</div>';
+    
+    // Detailed feedback section
+    feedback += '<div style="background-color: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 15px;">';
+    feedback += '<h3 style="color: #3f37c9; margin-bottom: 10px;">Detailed Feedback</h3>';
+    
+    // Add mistake analysis
+    if (mistakeAnalysis.commonMistakes.length > 0) {
+        feedback += '<h4>🔍 Common Mistake Patterns:</h4><ul>';
+        mistakeAnalysis.commonMistakes.forEach(mistake => {
+            feedback += `<li>${mistake}</li>`;
+        });
+        feedback += '</ul>';
+    }
+    
+    // Add specific suggestions
+    feedback += '<h4>💡 Improvement Suggestions:</h4><ul>';
+    
+    if (mistakeAnalysis.omissionRate > 0.2) {
+        feedback += '<li>You\'re skipping many words. Practice reading ahead to anticipate upcoming words.</li>';
+    }
+    
+    if (mistakeAnalysis.additionRate > 0.15) {
+        feedback += '<li>You\'re adding extra words. Focus on typing only what you hear/see.</li>';
+    }
+    
+    if (mistakeAnalysis.spellingErrorRate > 0.25) {
+        feedback += '<li>Spelling mistakes are frequent. Consider practicing difficult words separately.</li>';
+    }
+    
+    if (mistakeAnalysis.capitalizationErrorRate > 0.1) {
+        feedback += '<li>Watch your capitalization. Remember proper nouns and sentence starts need capitals.</li>';
+    }
+    
+    // Add general tips
+    feedback += '<li>Practice difficult sections repeatedly until you master them.</li>';
+    feedback += '<li>Try breaking long passages into smaller chunks for focused practice.</li>';
+    feedback += '<li>Consider finger placement - proper technique can improve both speed and accuracy.</li>';
+    feedback += '</ul>';
+    
+    // Add practice recommendations
+    feedback += '<h4>📚 Recommended Practice:</h4><ul>';
+    feedback += `<li>Focus on ${mistakeAnalysis.mostErrorProneWords.length > 0 ? 
+        'these words: ' + mistakeAnalysis.mostErrorProneWords.join(', ') + 
+        ' or similar patterns' : 'your weakest areas'} for 10 minutes daily</li>`;
+    feedback += '<li>Try typing exercises that focus on accuracy before speed</li>';
+    feedback += '<li>Use the "slowest comfortable speed" method to build accuracy</li>';
+    feedback += '</ul>';
+    
+    feedback += '</div>';
+    
+    return feedback;
+}
+
+function analyzeMistakes(originalText, userText) {
+    // This would analyze the text and return common mistake patterns
+    const analysis = {
+        commonMistakes: [],
+        omissionRate: 0,
+        additionRate: 0,
+        spellingErrorRate: 0,
+        capitalizationErrorRate: 0,
+        mostErrorProneWords: []
+    };
+    
+    // Sample analysis - in a real app this would be more sophisticated
+    const wordPairs = [];
+    const minLength = Math.min(originalText.length, userText.length);
+    
+    // Find word-by-word differences
+    for (let i = 0; i < minLength; i++) {
+        const origWord = originalText[i].toLowerCase();
+        const userWord = userText[i].toLowerCase();
+        
+        if (origWord !== userWord) {
+            wordPairs.push({ original: originalText[i], user: userText[i] });
+        }
+    }
+    
+    // Count different types of errors
+    let omissionCount = 0;
+    let additionCount = 0;
+    let spellingCount = 0;
+    let capitalizationCount = 0;
+    const errorWords = [];
+    
+    wordPairs.forEach(pair => {
+        const orig = pair.original.toLowerCase();
+        const user = pair.user.toLowerCase();
+        
+        if (user === '') {
+            omissionCount++;
+        } else if (orig === '') {
+            additionCount++;
+        } else if (orig === user) {
+            capitalizationCount++;
+            errorWords.push(pair.original);
+        } else if (isSimilar(orig, user)) {
+            spellingCount++;
+            errorWords.push(pair.original);
+        } else {
+            // Other types of errors
+            errorWords.push(pair.original);
+        }
+    });
+    
+    // Calculate rates
+    analysis.omissionRate = omissionCount / originalText.length;
+    analysis.additionRate = additionCount / originalText.length;
+    analysis.spellingErrorRate = spellingCount / originalText.length;
+    analysis.capitalizationErrorRate = capitalizationCount / originalText.length;
+    
+    // Find most common error words
+    const wordFrequency = {};
+    errorWords.forEach(word => {
+        const lowerWord = word.toLowerCase();
+        wordFrequency[lowerWord] = (wordFrequency[lowerWord] || 0) + 1;
+    });
+    
+    analysis.mostErrorProneWords = Object.entries(wordFrequency)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(entry => entry[0]);
+    
+    // Generate common mistake descriptions
+    if (capitalizationCount > 0) {
+        analysis.commonMistakes.push(`Capitalization errors (${capitalizationCount} instances)`);
+    }
+    if (spellingCount > 0) {
+        analysis.commonMistakes.push(`Spelling mistakes (${spellingCount} instances)`);
+    }
+    if (omissionCount > 0) {
+        analysis.commonMistakes.push(`Omitted words (${omissionCount} instances)`);
+    }
+    if (additionCount > 0) {
+        analysis.commonMistakes.push(`Added extra words (${additionCount} instances)`);
+    }
+    
+    return analysis;
 }

@@ -231,6 +231,48 @@ button:active {
   text-decoration: underline;
 }
 
+/* AI Feedback Styles */
+#textBoxC h3 {
+    font-size: 1.3rem;
+    margin: 15px 0 10px 0;
+    color: var(--primary-color);
+}
+
+#textBoxC h4 {
+    font-size: 1.1rem;
+    margin: 12px 0 8px 0;
+    color: var(--secondary-color);
+}
+
+#textBoxC ul {
+    margin-left: 20px;
+    margin-bottom: 15px;
+}
+
+#textBoxC li {
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+
+/* Improve table styling */
+#textBoxC table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+    border: 2px solid var(--primary-color);
+}
+
+#textBoxC th, #textBoxC td {
+    padding: 10px;
+    text-align: center;
+    border: 1px solid #ddd;
+}
+
+#textBoxC th {
+    background-color: var(--light-color);
+    font-weight: 600;
+}
+
 /* Responsive adjustments */
 @media (max-width: 768px) {
   .header h1 {
@@ -254,6 +296,14 @@ button:active {
   .timer-container {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  #textBoxC table {
+    font-size: 0.9rem;
+  }
+
+  #textBoxC th, #textBoxC td {
+    padding: 8px 4px;
   }
 }
 
