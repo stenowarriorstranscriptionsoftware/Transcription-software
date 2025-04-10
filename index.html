@@ -3,10 +3,10 @@
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8" />
   <title>Steno Warriors Transcription Software</title>
-  <script src="lookup.js"></script>
-  <script src="textLookup.js"></script>
-  <script src="1c2.js"></script>
-  <link rel="stylesheet" href="styles.css">
+  <script src="js/lookup.js"></script>
+  <script src="js/textLookup.js"></script>
+  <script src="js/1c2.js"></script>
+  <link rel="stylesheet" href="css/styles.css">
   <link rel="preconnect" href="https://fonts.googleapis.com/">
   <link rel="preconnect" href="https://fonts.gstatic.com/" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Exo+2:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
@@ -22,23 +22,15 @@
     <h2>Please select a Test</h2>
     <div class="select-panel">
       <select id="volume-select">
-        <option value="1">Test 1-22</option>
-        <option value="2">Test 23-44</option>
-        <option value="3">Test 45-66</option>
-        <option value="4">Test 67-88</option>
-        <option value="5">Test 89-110</option>
+        <option value="1">Test 1-50 (General Matter)</option>
+        <option value="2">Test 51-100 (KC Mix Transcription)</option>
       </select>
 
       <select id="test-select">
       </select>
     
       <select id="speed-select">
-        <option value="70">70 WPM</option>
-        <option value="75">75 WPM</option>
         <option value="80">80 WPM</option>
-        <option value="85">85 WPM</option>
-        <option value="90">90 WPM</option>
-        <option value="95">95 WPM</option>
         <option value="100">100 WPM</option>
       </select>
     </div>
@@ -66,7 +58,6 @@
     </div>
   </div>
 
-  <!-- Add these scripts before your main script -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -77,13 +68,12 @@
     let resetButton = document.getElementById('reset');
     let paragraphB = document.getElementById('paragraphB');
     let timerInterval;
-    let timeLeft = 3000; // 50 minutes in seconds (50 * 60)
+    let timeLeft = 3000;
     let isTimerRunning = false;
     let startTimeStamp;
     let pausedTime = 0;
-    let selectedDuration = 3000; // Default to 50 minutes
+    let selectedDuration = 3000;
 
-    // Format time as MM:SS
     function formatTime(seconds) {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
@@ -102,7 +92,6 @@
             paragraphB.placeholder = "Start typing here...";
             paragraphB.focus();
             
-            // Record start time (adjusted for paused time)
             startTimeStamp = Date.now() - pausedTime * 1000;
             pausedTime = 0;
             
@@ -117,9 +106,9 @@
                     isTimerRunning = false;
                     startPauseButton.textContent = 'Start';
                     paragraphB.disabled = true;
-                    compareParagraphs(); // Auto-submit when time runs out
+                    compareParagraphs();
                 }
-            }, 200); // Update more frequently for smoother countdown
+            }, 200);
         }
     }
 
@@ -131,7 +120,6 @@
             paragraphB.disabled = true;
             paragraphB.placeholder = "Timer paused - click Start to continue";
             
-            // Calculate how much time was spent in this session
             const elapsedSeconds = Math.floor((Date.now() - startTimeStamp) / 1000);
             pausedTime = selectedDuration - (timeLeft - elapsedSeconds);
         }
@@ -145,7 +133,6 @@
         paragraphB.value = '';
         paragraphB.placeholder = "Click Start to begin typing";
         
-        // Reset to selected duration
         timeLeft = selectedDuration;
         pausedTime = 0;
         updateTimerDisplay();
@@ -167,7 +154,6 @@
         });
     }
 
-    // Event listeners
     startPauseButton.addEventListener('click', () => {
         if (isTimerRunning) {
             pauseTimer();
@@ -178,7 +164,6 @@
 
     resetButton.addEventListener('click', resetTimer);
 
-    // Duration radio buttons
     document.querySelectorAll('input[name="duration"]').forEach(radio => {
         radio.addEventListener('change', function() {
             if (!isTimerRunning) {
@@ -189,21 +174,16 @@
         });
     });
 
-    // Initialize timer display
     updateTimerDisplay();
 
-    // Test selection functionality
     const volumeSelect = document.getElementById('volume-select');
     const testSelect = document.getElementById('test-select');
     const speedSelect = document.getElementById('speed-select');
     const videoContainer = document.getElementById('video-container');
 
     const tests = {
-      1: Array.from({ length: 22 }, (_, i) => `${i + 1}`),
-      2: Array.from({ length: 22 }, (_, i) => `${i + 23}`),
-      3: Array.from({ length: 22 }, (_, i) => `${i + 45}`),
-      4: Array.from({ length: 22 }, (_, i) => `${i + 67}`), 
-      5: Array.from({ length: 22 }, (_, i) => `${i + 89}`),
+      1: Array.from({ length: 50 }, (_, i) => `${i + 1}`),
+      2: Array.from({ length: 50 }, (_, i) => `${i + 51}`),
     };
 
     function populateTests(volume) {
@@ -235,23 +215,18 @@
     testSelect.addEventListener('change', updateVideo);
     speedSelect.addEventListener('change', updateVideo);
 
-    // Initialize on load
     populateTests(volumeSelect.value);
     updateVideo();
 
-    // Enhanced PDF download function
     function downloadPDF() {
-      // Stop the timer when showing results
       if (isTimerRunning) {
         pauseTimer();
       }
       
-      // Disable timer controls
       disableTimerControls();
       
       compareParagraphs();
       
-      // Get current date and time
       const currentDate = new Date();
       const day = currentDate.getDate();
       const monthIndex = currentDate.getMonth();
@@ -286,25 +261,21 @@
       const textBoxC = document.getElementById('textBoxC');
       textBoxC.insertBefore(headerText, textBoxC.firstChild);
       
-      // Add download button
       const downloadBtn = document.createElement('button');
       downloadBtn.textContent = 'Download PDF';
       downloadBtn.className = 'download-btn';
       downloadBtn.onclick = function() {
         generatePDF();
-        // Re-enable controls after PDF generation
         enableTimerControls();
       };
       
-      // Add close button
       const closeBtn = document.createElement('button');
       closeBtn.textContent = 'Close Results';
       closeBtn.className = 'download-btn';
       closeBtn.style.marginLeft = '10px';
       closeBtn.onclick = function() {
-    location.reload(); // Refreshes the page
-};
-
+        location.reload();
+      };
       
       textBoxC.appendChild(downloadBtn);
       textBoxC.appendChild(closeBtn);
@@ -315,26 +286,24 @@
       const { jsPDF } = window.jspdf;
       const element = document.getElementById('textBoxC');
       
-      // Temporarily hide the buttons to avoid including them in the PDF
       const buttons = element.querySelectorAll('button');
       buttons.forEach(btn => {
         btn.style.display = 'none';
       });
       
-      // Add some padding for better appearance in PDF
       const originalPadding = element.style.padding;
       element.style.padding = '20px';
       
       html2canvas(element, {
-        scale: 2, // Higher quality
+        scale: 2,
         logging: false,
         useCORS: true,
         allowTaint: true
       }).then(canvas => {
         const imgData = canvas.toDataURL('image/png');
         const pdf = new jsPDF('p', 'mm', 'a4');
-        const imgWidth = 210; // A4 width in mm
-        const pageHeight = 295; // A4 height in mm
+        const imgWidth = 210;
+        const pageHeight = 295;
         const imgHeight = canvas.height * imgWidth / canvas.width;
         let heightLeft = imgHeight;
         let position = 0;
@@ -349,7 +318,6 @@
           heightLeft -= pageHeight;
         }
 
-        // Restore the button visibility and original padding
         buttons.forEach(btn => {
           btn.style.display = 'block';
         });
