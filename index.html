@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html>
-
 <head>
   <meta http-equiv="content-type" content="text/html;charset=utf-8" />
   <title>Steno Warriors Transcription Software</title>
@@ -78,85 +77,120 @@
     let resetButton = document.getElementById('reset');
     let paragraphB = document.getElementById('paragraphB');
     let timerInterval;
-    let timeLeft = 3000;
-    let durationRadios = document.getElementsByName('duration');
+    let timeLeft = 3000; // 50 minutes in seconds (50 * 60)
     let isTimerRunning = false;
+    let startTimeStamp;
+    let pausedTime = 0;
+    let selectedDuration = 3000; // Default to 50 minutes
+
+    // Format time as MM:SS
+    function formatTime(seconds) {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
 
     function updateTimerDisplay() {
-      let minutes = Math.floor(timeLeft / 60);
-      let seconds = timeLeft % 60;
-      timerDisplay.textContent = String(minutes).padStart(2, '0') + ':' + String(seconds).padStart(2, '0');
+        timerDisplay.textContent = formatTime(timeLeft);
     }
 
     function startTimer() {
-      isTimerRunning = true;
-      paragraphB.disabled = false;
-      paragraphB.placeholder = "Start typing here...";
-      paragraphB.focus();
-      
-      timerInterval = setInterval(() => {
-        if (timeLeft > 0) {
-          timeLeft--;
-          updateTimerDisplay();
-        } else {
-          clearInterval(timerInterval);
-          startPauseButton.textContent = 'Start';
-          isTimerRunning = false;
-          paragraphB.disabled = true;
+        if (!isTimerRunning) {
+            isTimerRunning = true;
+            startPauseButton.textContent = 'Pause';
+            paragraphB.disabled = false;
+            paragraphB.placeholder = "Start typing here...";
+            paragraphB.focus();
+            
+            // Record start time (adjusted for paused time)
+            startTimeStamp = Date.now() - pausedTime * 1000;
+            pausedTime = 0;
+            
+            timerInterval = setInterval(() => {
+                const elapsedSeconds = Math.floor((Date.now() - startTimeStamp) / 1000);
+                timeLeft = Math.max(0, selectedDuration - elapsedSeconds);
+                
+                updateTimerDisplay();
+                
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    isTimerRunning = false;
+                    startPauseButton.textContent = 'Start';
+                    paragraphB.disabled = true;
+                    compareParagraphs(); // Auto-submit when time runs out
+                }
+            }, 200); // Update more frequently for smoother countdown
         }
-      }, 1000);
-      startPauseButton.textContent = 'Pause';
     }
 
     function pauseTimer() {
-      clearInterval(timerInterval);
-      startPauseButton.textContent = 'Start';
-      isTimerRunning = false;
-      paragraphB.disabled = true;
-      paragraphB.placeholder = "Timer paused - click Start to continue";
+        if (isTimerRunning) {
+            clearInterval(timerInterval);
+            isTimerRunning = false;
+            startPauseButton.textContent = 'Start';
+            paragraphB.disabled = true;
+            paragraphB.placeholder = "Timer paused - click Start to continue";
+            
+            // Calculate how much time was spent in this session
+            const elapsedSeconds = Math.floor((Date.now() - startTimeStamp) / 1000);
+            pausedTime = selectedDuration - (timeLeft - elapsedSeconds);
+        }
     }
 
+    function resetTimer() {
+        clearInterval(timerInterval);
+        isTimerRunning = false;
+        startPauseButton.textContent = 'Start';
+        paragraphB.disabled = true;
+        paragraphB.value = '';
+        paragraphB.placeholder = "Click Start to begin typing";
+        
+        // Reset to selected duration
+        timeLeft = selectedDuration;
+        pausedTime = 0;
+        updateTimerDisplay();
+    }
+
+    function disableTimerControls() {
+        startPauseButton.disabled = true;
+        resetButton.disabled = true;
+        document.querySelectorAll('input[name="duration"]').forEach(radio => {
+            radio.disabled = true;
+        });
+    }
+
+    function enableTimerControls() {
+        startPauseButton.disabled = false;
+        resetButton.disabled = false;
+        document.querySelectorAll('input[name="duration"]').forEach(radio => {
+            radio.disabled = false;
+        });
+    }
+
+    // Event listeners
     startPauseButton.addEventListener('click', () => {
-      if (startPauseButton.textContent === 'Start') {
-        startTimer();
-      } else {
-        pauseTimer();
-      }
+        if (isTimerRunning) {
+            pauseTimer();
+        } else {
+            startTimer();
+        }
     });
 
-    resetButton.addEventListener('click', () => {
-      clearInterval(timerInterval);
-      for (let radio of durationRadios) {
-        if (radio.checked) {
-          timeLeft = parseInt(radio.value);
-          break;
-        }
-      }
-      updateTimerDisplay();
-      startPauseButton.textContent = 'Start';
-      isTimerRunning = false;
-      paragraphB.disabled = true;
-      paragraphB.value = '';
-      paragraphB.placeholder = "Click Start to begin typing";
+    resetButton.addEventListener('click', resetTimer);
+
+    // Duration radio buttons
+    document.querySelectorAll('input[name="duration"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (!isTimerRunning) {
+                selectedDuration = parseInt(this.value);
+                timeLeft = selectedDuration;
+                updateTimerDisplay();
+            }
+        });
     });
 
-    function updateDuration() {
-      clearInterval(timerInterval);
-      for (let radio of durationRadios) {
-        if (radio.checked) {
-          timeLeft = parseInt(radio.value);
-          break;
-        }
-      }
-      updateTimerDisplay();
-      startPauseButton.textContent = 'Start';
-      isTimerRunning = false;
-      paragraphB.disabled = true;
-    }
-
-    for (let radio of durationRadios) {
-      radio.addEventListener('change', updateDuration);
-    }
+    // Initialize timer display
+    updateTimerDisplay();
 
     // Test selection functionality
     const volumeSelect = document.getElementById('volume-select');
@@ -204,7 +238,6 @@
     // Initialize on load
     populateTests(volumeSelect.value);
     updateVideo();
-    updateTimerDisplay();
 
     // Enhanced PDF download function
     function downloadPDF() {
@@ -212,6 +245,9 @@
       if (isTimerRunning) {
         pauseTimer();
       }
+      
+      // Disable timer controls
+      disableTimerControls();
       
       compareParagraphs();
       
@@ -254,9 +290,24 @@
       const downloadBtn = document.createElement('button');
       downloadBtn.textContent = 'Download PDF';
       downloadBtn.className = 'download-btn';
-      downloadBtn.onclick = generatePDF;
+      downloadBtn.onclick = function() {
+        generatePDF();
+        // Re-enable controls after PDF generation
+        enableTimerControls();
+      };
+      
+      // Add close button
+      const closeBtn = document.createElement('button');
+      closeBtn.textContent = 'Close Results';
+      closeBtn.className = 'download-btn';
+      closeBtn.style.marginLeft = '10px';
+      closeBtn.onclick = function() {
+    location.reload(); // Refreshes the page
+};
+
       
       textBoxC.appendChild(downloadBtn);
+      textBoxC.appendChild(closeBtn);
       textBoxC.style.display = 'block';
     }
 
@@ -264,9 +315,11 @@
       const { jsPDF } = window.jspdf;
       const element = document.getElementById('textBoxC');
       
-      // Temporarily hide the download button to avoid including it in the PDF
-      const downloadBtn = element.querySelector('button');
-      if (downloadBtn) downloadBtn.style.display = 'none';
+      // Temporarily hide the buttons to avoid including them in the PDF
+      const buttons = element.querySelectorAll('button');
+      buttons.forEach(btn => {
+        btn.style.display = 'none';
+      });
       
       // Add some padding for better appearance in PDF
       const originalPadding = element.style.padding;
@@ -297,7 +350,9 @@
         }
 
         // Restore the button visibility and original padding
-        if (downloadBtn) downloadBtn.style.display = 'block';
+        buttons.forEach(btn => {
+          btn.style.display = 'block';
+        });
         element.style.padding = originalPadding;
         
         pdf.save('StenoWarriors_Result.pdf');

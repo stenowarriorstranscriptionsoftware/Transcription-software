@@ -7,15 +7,10 @@ window.onload = function() {
     document.getElementById('paragraphB').addEventListener('input', function() {
         if (!startTime) {
             startTime = new Date();
-            // Reset timer if user starts typing again
-            clearTimeout(typingTimer);
-            typingTimer = setTimeout(function() {
-                // Consider typing finished after 5 seconds of inactivity
-                compareParagraphs();
-            }, 5000);
         }
     });
 };
+
 
 function checkForMatchingWords(word, paragraph, startIndex) {
     var wordsToCheck = 1;

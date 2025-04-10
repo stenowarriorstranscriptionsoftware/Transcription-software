@@ -102,18 +102,13 @@ h2 {
   border-radius: var(--border-radius);
   margin-bottom: 1.5rem;
   display: flex;
-  align-items: center;
   flex-wrap: wrap;
   gap: 1rem;
-}
-
-.timer-controls {
-  display: flex;
-  gap: 0.5rem;
   align-items: center;
 }
 
 #timer {
+  font-family: monospace;
   font-size: 1.5rem;
   font-weight: bold;
   color: var(--primary-color);
@@ -125,14 +120,21 @@ h2 {
   box-shadow: var(--box-shadow);
 }
 
-label {
+.timer-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.timer-controls label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
   cursor: pointer;
 }
 
-input[type="radio"] {
+.timer-controls input[type="radio"] {
   accent-color: var(--primary-color);
 }
 
@@ -149,13 +151,18 @@ button {
   box-shadow: var(--box-shadow);
 }
 
-button:hover {
+button:hover:not(:disabled) {
   background-color: var(--secondary-color);
   transform: translateY(-2px);
 }
 
-button:active {
+button:active:not(:disabled) {
   transform: translateY(0);
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .download-btn {
@@ -163,7 +170,7 @@ button:active {
   margin-top: 1rem;
 }
 
-.download-btn:hover {
+.download-btn:hover:not(:disabled) {
   background-color: #3aa8d8;
 }
 
@@ -171,7 +178,7 @@ button:active {
   background-color: var(--accent-color);
 }
 
-.tmrBtn:hover {
+.tmrBtn:hover:not(:disabled) {
   background-color: #3a7bc8;
 }
 
